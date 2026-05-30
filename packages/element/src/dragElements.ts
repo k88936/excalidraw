@@ -21,6 +21,7 @@ import { getPerfectElementSize } from "./sizeHelpers";
 import { getBoundTextElement } from "./textElement";
 import { getMinTextElementWidth } from "./textMeasurements";
 import {
+  isAnimationElement,
   isArrowElement,
   isElbowArrow,
   isFrameLikeElement,
@@ -330,7 +331,7 @@ export const dragNewElement = ({
 
   if (width !== 0 && height !== 0) {
     let imageInitialDimension = null;
-    if (isImageElement(newElement)) {
+    if (isImageElement(newElement) || isAnimationElement(newElement)) {
       imageInitialDimension = {
         initialWidth: width,
         initialHeight: height,

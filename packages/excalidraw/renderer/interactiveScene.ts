@@ -32,6 +32,7 @@ import {
   hasBoundingBox,
   hitElementItself,
   isArrowElement,
+  isAnimationElement,
   isBindableElement,
   isElbowArrow,
   isFrameLikeElement,
@@ -1851,7 +1852,8 @@ const _renderInteractiveScene = ({
               appState.activeEmbeddable.state === "active",
             padding:
               element.id === appState.croppingElementId ||
-              isImageElement(element)
+              isImageElement(element) ||
+              isAnimationElement(element)
                 ? 0
                 : undefined,
           });

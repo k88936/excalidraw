@@ -10,9 +10,11 @@ import type {
   ExcalidrawElement,
   ExcalidrawTextElement,
   ExcalidrawEmbeddableElement,
+  ExcalidrawAnimationElement,
   ExcalidrawLinearElement,
   ExcalidrawBindableElement,
   ExcalidrawFreeDrawElement,
+  InitializedExcalidrawAnimationElement,
   InitializedExcalidrawImageElement,
   ExcalidrawImageElement,
   ExcalidrawTextElementWithContainer,
@@ -37,10 +39,22 @@ export const isInitializedImageElement = (
   return !!element && element.type === "image" && !!element.fileId;
 };
 
+export const isInitializedAnimationElement = (
+  element: ExcalidrawElement | null,
+): element is InitializedExcalidrawAnimationElement => {
+  return !!element && element.type === "animation" && !!element.fileId;
+};
+
 export const isImageElement = (
   element: ExcalidrawElement | null,
 ): element is ExcalidrawImageElement => {
   return !!element && element.type === "image";
+};
+
+export const isAnimationElement = (
+  element: ExcalidrawElement | null,
+): element is ExcalidrawAnimationElement => {
+  return !!element && element.type === "animation";
 };
 
 export const isEmbeddableElement = (
@@ -181,16 +195,17 @@ export const isBindableElement = (
   return (
     element != null &&
     (!element.locked || includeLocked === true) &&
-    (element.type === "rectangle" ||
-      element.type === "diamond" ||
-      element.type === "ellipse" ||
-      element.type === "image" ||
-      element.type === "iframe" ||
-      element.type === "embeddable" ||
-      element.type === "frame" ||
-      element.type === "magicframe" ||
-      (element.type === "text" && !element.containerId))
-  );
+  (element.type === "rectangle" ||
+    element.type === "diamond" ||
+    element.type === "ellipse" ||
+    element.type === "image" ||
+    element.type === "animation" ||
+    element.type === "iframe" ||
+    element.type === "embeddable" ||
+    element.type === "frame" ||
+    element.type === "magicframe" ||
+    (element.type === "text" && !element.containerId))
+);
 };
 
 export const isRectanguloidElement = (
@@ -201,6 +216,7 @@ export const isRectanguloidElement = (
     (element.type === "rectangle" ||
       element.type === "diamond" ||
       element.type === "image" ||
+      element.type === "animation" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
       element.type === "frame" ||
@@ -218,6 +234,7 @@ export const isRectangularElement = (
     element != null &&
     (element.type === "rectangle" ||
       element.type === "image" ||
+      element.type === "animation" ||
       element.type === "text" ||
       element.type === "iframe" ||
       element.type === "embeddable" ||
@@ -261,6 +278,7 @@ export const isExcalidrawElement = (
     case "frame":
     case "magicframe":
     case "image":
+    case "animation":
     case "selection": {
       return true;
     }
@@ -309,7 +327,8 @@ export const isUsingAdaptiveRadius = (type: string) =>
   type === "rectangle" ||
   type === "embeddable" ||
   type === "iframe" ||
-  type === "image";
+  type === "image" ||
+  type === "animation";
 
 export const isUsingProportionalRadius = (type: string) =>
   type === "line" || type === "arrow" || type === "diamond";
@@ -403,6 +422,7 @@ export const isEligibleFrameChildType = (type: ElementOrToolType) => {
     case "freedraw":
     case "text":
     case "image":
+    case "animation":
     case "frame":
     case "embeddable": {
       return true;

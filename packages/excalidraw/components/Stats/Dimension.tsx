@@ -33,7 +33,7 @@ interface DimensionDragInputProps {
 
 const STEP_SIZE = 10;
 const _shouldKeepAspectRatio = (element: ExcalidrawElement) => {
-  return element.type === "image";
+  return element.type === "image" || element.type === "animation";
 };
 
 const handleDimensionChange: DragInputCallbackType<

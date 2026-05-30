@@ -70,6 +70,7 @@ import {
   EmbedIcon,
   extraToolsIcon,
   frameToolIcon,
+  ImageIcon,
   mermaidLogoIcon,
   laserPointerToolIcon,
   MagicIcon,
@@ -118,6 +119,7 @@ export const canChangeStrokeColor = (
   return (
     (hasStrokeColor(appState.activeTool.type) &&
       commonSelectedType !== "image" &&
+      commonSelectedType !== "animation" &&
       commonSelectedType !== "frame" &&
       commonSelectedType !== "magicframe") ||
     targetElements.some((element) => hasStrokeColor(element.type))
@@ -1075,6 +1077,7 @@ export const ShapesSwitcher = ({
     app.state.preferredSelectionTool.type !== "lasso";
 
   const embeddableToolSelected = activeTool.type === "embeddable";
+  const animationToolSelected = activeTool.type === "animation";
 
   const { TTDDialogTriggerTunnel } = useTunnels();
 
@@ -1188,6 +1191,7 @@ export const ShapesSwitcher = ({
             "App-toolbar__extra-tools-trigger--selected":
               frameToolSelected ||
               embeddableToolSelected ||
+              animationToolSelected ||
               lassoToolSelected ||
               // in collab we're already highlighting the laser button
               // outside toolbar, so let's not highlight extra-tools button
@@ -1204,6 +1208,8 @@ export const ShapesSwitcher = ({
             ? frameToolIcon
             : embeddableToolSelected
             ? EmbedIcon
+            : animationToolSelected
+            ? ImageIcon
             : laserToolSelected && !app.props.isCollaborating
             ? laserPointerToolIcon
             : lassoToolSelected
@@ -1231,6 +1237,14 @@ export const ShapesSwitcher = ({
             selected={embeddableToolSelected}
           >
             {t("toolBar.embeddable")}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => app.setActiveTool({ type: "animation" })}
+            icon={ImageIcon}
+            data-testid="toolbar-animation"
+            selected={animationToolSelected}
+          >
+            {t("toolBar.animation")}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => app.setActiveTool({ type: "laser" })}

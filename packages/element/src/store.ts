@@ -25,6 +25,7 @@ import {
   hashString,
   isInitializedImageElement,
   isImageElement,
+  isAnimationElement,
 } from "./index";
 
 import type { ApplyToOptions } from "./delta";
@@ -935,10 +936,11 @@ export class StoreSnapshot {
         prevElement.version < nextElement.version // element was updated
       ) {
         if (
-          isImageElement(nextElement) &&
-          !isInitializedImageElement(nextElement)
+          (isImageElement(nextElement) &&
+            !isInitializedImageElement(nextElement)) ||
+          (isAnimationElement(nextElement) && !nextElement.fileId)
         ) {
-          // ignore any updates on uninitialized image elements
+          // ignore any updates on uninitialized image/animation elements
           continue;
         }
 

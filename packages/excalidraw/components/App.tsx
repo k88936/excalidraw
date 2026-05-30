@@ -1,3 +1,4 @@
+
 import clsx from "clsx";
 import throttle from "lodash.throttle";
 import React, { useContext } from "react";
@@ -77,6 +78,7 @@ import {
   isTransparent,
   easeToValuesRAF,
   muteFSAbortError,
+  toBrandedType,
   isTestEnv,
   isDevEnv,
   easeOut,
@@ -125,6 +127,7 @@ import {
   newFrameElement,
   newFreeDrawElement,
   newEmbeddableElement,
+  newAnimationElement,
   newMagicFrameElement,
   newIframeElement,
   newArrowElement,
@@ -142,6 +145,7 @@ import {
   isBoundToContainer,
   isFrameLikeElement,
   isImageElement,
+  isAnimationElement,
   isEmbeddableElement,
   isInitializedImageElement,
   isLinearElement,
@@ -273,6 +277,7 @@ import type {
   NonDeleted,
   InitializedExcalidrawImageElement,
   ExcalidrawImageElement,
+  ExcalidrawAnimationElement,
   FileId,
   NonDeletedExcalidrawElement,
   ExcalidrawTextContainer,
@@ -1547,6 +1552,93 @@ class App extends React.Component<AppProps, AppState> {
     });
   };
 
+  private renderAnimationElements() {
+    const scale = this.state.zoom.value;
+    const normalizedWidth = this.state.width;
+    const normalizedHeight = this.state.height;
+
+    const animationElements = this.scene
+      .getNonDeletedElements()
+      .filter(
+        (el): el is Ordered<NonDeleted<ExcalidrawAnimationElement>> =>
+          isAnimationElement(el) &&
+          !!el.fileId &&
+          !!this.files[el.fileId]?.dataURL,
+      );
+
+    return animationElements.map((el) => {
+      const { x, y } = sceneCoordsToViewportCoords(
+        { sceneX: el.x, sceneY: el.y },
+        this.state,
+      );
+
+      const isVisible = isElementInViewport(
+        el,
+        normalizedWidth,
+        normalizedHeight,
+        this.state,
+        this.scene.getNonDeletedElementsMap(),
+      );
+
+      if (!isVisible) {
+        return null;
+      }
+
+      const dataURL = this.files[el.fileId!]?.dataURL;
+
+      return (
+        <div
+          key={el.id}
+          className="excalidraw__embeddable-container"
+          style={{
+            transform: `translate(${x - this.state.offsetLeft}px, ${
+              y - this.state.offsetTop
+            }px) scale(${scale})`,
+            opacity: getRenderOpacity(
+              el,
+              getContainingFrame(el, this.scene.getNonDeletedElementsMap()),
+              this.elementsPendingErasure,
+              null,
+              this.state.openDialog?.name === "elementLinkSelector"
+                ? 0.4
+                : 1,
+            ),
+            ["--embeddable-radius" as string]: `${getCornerRadius(
+              Math.min(el.width, el.height),
+              el,
+            )}px`,
+          }}
+        >
+          <div
+            className="excalidraw__embeddable-container__inner"
+            style={{
+              width: el.width,
+              height: el.height,
+              transform: `rotate(${el.angle}rad) scale(${el.scale[0]}, ${el.scale[1]})`,
+              transformOrigin: "center",
+              pointerEvents: "none",
+              overflow: "hidden",
+              borderRadius: getCornerRadius(
+                Math.min(el.width, el.height),
+                el,
+              ),
+            }}
+          >
+            <img
+              src={dataURL}
+              style={{
+                width: "100%",
+                height: "100%",
+                display: "block",
+              }}
+              alt=""
+            />
+          </div>
+        </div>
+      );
+    });
+  }
+
   private renderEmbeddables() {
     const scale = this.state.zoom.value;
     const normalizedWidth = this.state.width;
@@ -2426,6 +2518,7 @@ class App extends React.Component<AppProps, AppState> {
                             <ConvertElementTypePopup app={this} />
                           )}
                         </ExcalidrawActionManagerContext.Provider>
+                        {this.renderAnimationElements()}
                         {this.renderEmbeddables()}
                       </ExcalidrawElementsContext.Provider>
                     </ExcalidrawAppStateContext.Provider>
@@ -3737,7 +3830,7 @@ class App extends React.Component<AppProps, AppState> {
       }
     }
 
-    // ------------------- Images or SVG code -------------------
+    // ------------------- Images, GIFs, or SVG code -------------------
     const imageFiles = dataTransferFiles.map((data) => data.file);
 
     if (imageFiles.length === 0 && data.text && !isPlainPaste) {
@@ -3750,10 +3843,21 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     if (imageFiles.length > 0) {
-      if (this.isToolSupported("image")) {
-        await this.insertImages(imageFiles, sceneX, sceneY);
-      } else {
+      if (!this.isToolSupported("image")) {
         this.setState({ errorMessage: t("errors.imageToolNotSupported") });
+        return;
+      }
+      const gifFiles = imageFiles.filter(
+        (f) => f.type === MIME_TYPES.gif,
+      );
+      const regularFiles = imageFiles.filter(
+        (f) => f.type !== MIME_TYPES.gif,
+      );
+      if (gifFiles.length > 0) {
+        await this.insertAnimation(gifFiles, sceneX, sceneY);
+      }
+      if (regularFiles.length > 0) {
+        await this.insertImages(regularFiles, sceneX, sceneY);
       }
       return;
     }
@@ -4101,7 +4205,16 @@ class App extends React.Component<AppProps, AppState> {
       const imageFiles = responses
         .filter((response): response is { file: File } => !!response.file)
         .map((response) => response.file);
-      await this.insertImages(imageFiles, sceneX, sceneY);
+      const gifFiles = imageFiles.filter((file) => file.type === MIME_TYPES.gif);
+      const regularFiles = imageFiles.filter(
+        (file) => file.type !== MIME_TYPES.gif,
+      );
+      if (gifFiles.length > 0) {
+        await this.insertAnimation(gifFiles, sceneX, sceneY);
+      }
+      if (regularFiles.length > 0) {
+        await this.insertImages(regularFiles, sceneX, sceneY);
+      }
       const error = responses.find((response) => !!response.errorMessage);
       if (error && error.errorMessage) {
         this.setState({ errorMessage: error.errorMessage });
@@ -5556,6 +5669,8 @@ class App extends React.Component<AppProps, AppState> {
     }
     if (nextActiveTool.type === "image") {
       this.onImageToolbarButtonClick();
+    } else if (nextActiveTool.type === "animation") {
+      this.onAnimationToolbarButtonClick();
     }
 
     this.setState((prevState) => {
@@ -9496,7 +9611,8 @@ class App extends React.Component<AppProps, AppState> {
       | "diamond"
       | "ellipse"
       | "iframe"
-      | "embeddable",
+      | "embeddable"
+      | "animation",
   ) {
     return this.state.currentItemRoundness === "round"
       ? {
@@ -9508,7 +9624,7 @@ class App extends React.Component<AppProps, AppState> {
   }
 
   private createGenericElementOnPointerDown = (
-    elementType: ExcalidrawGenericElement["type"] | "embeddable",
+    elementType: ExcalidrawGenericElement["type"] | "embeddable" | "animation",
     pointerDownState: PointerDownState,
   ): void => {
     const [gridX, gridY] = getGridPoint(
@@ -9544,6 +9660,13 @@ class App extends React.Component<AppProps, AppState> {
       element = newEmbeddableElement({
         type: "embeddable",
         ...baseElementAttributes,
+      });
+    } else if (elementType === "animation") {
+      element = newAnimationElement({
+        type: "animation",
+        ...baseElementAttributes,
+        status: "pending",
+        fileId: null,
       });
     } else {
       element = newElement({
@@ -11760,7 +11883,9 @@ class App extends React.Component<AppProps, AppState> {
             },
           ]);
 
-          if (!this.imageCache.get(fileId)) {
+          const isGif = mimeType === MIME_TYPES.gif;
+
+          if (!isGif && !this.imageCache.get(fileId)) {
             this.addNewImagesToImageCache();
 
             const { erroredFiles } = await this.updateImageCache([
@@ -11772,7 +11897,14 @@ class App extends React.Component<AppProps, AppState> {
             }
           }
 
-          const imageHTML = await this.imageCache.get(fileId)?.image;
+          const imageHTML = isGif
+            ? await new Promise<HTMLImageElement>((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => reject(new Error("Failed to load GIF"));
+                img.src = dataURL;
+              })
+            : await this.imageCache.get(fileId)?.image;
 
           if (
             imageHTML &&
@@ -11840,6 +11972,43 @@ class App extends React.Component<AppProps, AppState> {
       });
 
       this.insertImages(imageFiles, x, y);
+    } catch (error: any) {
+      if (error.name !== "AbortError") {
+        console.error(error);
+      } else {
+        console.warn(error);
+      }
+      this.setState(
+        {
+          newElement: null,
+          activeTool: updateActiveTool(this.state, {
+            type: this.state.preferredSelectionTool.type,
+          }),
+        },
+        () => {
+          this.actionManager.executeAction(actionFinalize);
+        },
+      );
+    }
+  };
+
+  private onAnimationToolbarButtonClick = async () => {
+    try {
+      const clientX = this.state.width / 2 + this.state.offsetLeft;
+      const clientY = this.state.height / 2 + this.state.offsetTop;
+
+      const { x, y } = viewportCoordsToSceneCoords(
+        { clientX, clientY },
+        this.state,
+      );
+
+      const animationFiles = await fileOpen({
+        description: "Animation",
+        extensions: ["gif"],
+        multiple: true,
+      });
+
+      this.insertAnimation(animationFiles, x, y);
     } catch (error: any) {
       if (error.name !== "AbortError") {
         console.error(error);
@@ -12069,6 +12238,107 @@ class App extends React.Component<AppProps, AppState> {
     });
   };
 
+  private insertAnimation = async (
+    gifFiles: File[],
+    sceneX: number,
+    sceneY: number,
+  ) => {
+    const gridPadding = 50 / this.state.zoom.value;
+
+    const placeholders = positionElementsOnGrid(
+      gifFiles.map(() =>
+        newAnimationElement({
+          type: "animation",
+          x: sceneX,
+          y: sceneY,
+          width: 100 / this.state.zoom.value,
+          height: 100 / this.state.zoom.value,
+          strokeColor: "transparent",
+          backgroundColor: "transparent",
+          fillStyle: this.state.currentItemFillStyle,
+          strokeWidth: this.state.currentItemStrokeWidth,
+          strokeStyle: this.state.currentItemStrokeStyle,
+          roughness: this.state.currentItemRoughness,
+          roundness: this.getCurrentItemRoundness("animation"),
+          opacity: this.state.currentItemOpacity,
+          locked: false,
+          status: "pending",
+          fileId: null,
+        }),
+      ),
+      sceneX,
+      sceneY,
+      gridPadding,
+    );
+    this.insertNewElements(placeholders);
+
+    const initialized = await Promise.all(
+      placeholders.map(async (placeholder, i) => {
+        try {
+          const file = await normalizeFile(gifFiles[i]);
+          const rawFileId =
+            (await this.props.generateIdForFile?.(file)) ||
+            (await generateIdFromFile(file));
+
+          if (!rawFileId) {
+            throw new Error(t("errors.imageInsertError"));
+          }
+          const fileId = toBrandedType<FileId>(rawFileId);
+
+          const dataURL = await getDataURL(file);
+
+          this.addMissingFiles([
+            {
+              mimeType: MIME_TYPES.gif,
+              id: fileId,
+              dataURL,
+              created: Date.now(),
+              lastRetrieved: Date.now(),
+            },
+          ]);
+
+          return newElementWith(placeholder, {
+            fileId,
+            status: "saved" as const,
+          });
+        } catch (error: any) {
+          this.setState({
+            errorMessage: error.message || t("errors.imageInsertError"),
+          });
+          return newElementWith(placeholder, { isDeleted: true });
+        }
+      }),
+    );
+    const initializedMap = arrayToMap(initialized);
+
+    const positioned = positionElementsOnGrid(
+      initialized.filter((el) => !el.isDeleted),
+      sceneX,
+      sceneY,
+      gridPadding,
+    );
+    const positionedMap = arrayToMap(positioned);
+
+    const nextElements = this.scene
+      .getElementsIncludingDeleted()
+      .map((el) => positionedMap.get(el.id) ?? initializedMap.get(el.id) ?? el);
+
+    this.updateScene({
+      appState: {
+        selectedElementIds: makeNextSelectedElementIds(
+          Object.fromEntries(positioned.map((el) => [el.id, true])),
+          this.state,
+        ),
+      },
+      elements: nextElements,
+      captureUpdate: CaptureUpdateAction.IMMEDIATELY,
+    });
+
+    this.setState({}, () => {
+      this.actionManager.executeAction(actionFinalize);
+    });
+  };
+
   private handleAppOnDrop = async (event: React.DragEvent<HTMLDivElement>) => {
     const { x: sceneX, y: sceneY } = viewportCoordsToSceneCoords(
       event,
@@ -12117,7 +12387,19 @@ class App extends React.Component<AppProps, AppState> {
       .filter((file) => isSupportedImageFile(file));
 
     if (imageFiles.length > 0 && this.isToolSupported("image")) {
-      return this.insertImages(imageFiles, sceneX, sceneY);
+      const gifFiles = imageFiles.filter(
+        (f) => f.type === MIME_TYPES.gif,
+      );
+      const regularFiles = imageFiles.filter(
+        (f) => f.type !== MIME_TYPES.gif,
+      );
+      if (gifFiles.length > 0) {
+        await this.insertAnimation(gifFiles, sceneX, sceneY);
+      }
+      if (regularFiles.length > 0) {
+        await this.insertImages(regularFiles, sceneX, sceneY);
+      }
+      return;
     }
     const excalidrawLibrary_ids = dataTransferList.getData(
       MIME_TYPES.excalidrawlibIds,

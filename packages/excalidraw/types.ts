@@ -151,6 +151,7 @@ export type ToolType =
   | "freedraw"
   | "text"
   | "image"
+  | "animation"
   | "eraser"
   | "hand"
   | "frame"
@@ -759,6 +760,7 @@ export type UIOptions = Partial<{
   canvasActions: CanvasActions;
   tools: {
     image: boolean;
+    animation: boolean;
   };
   /**
    * Optionally control the editor form factor and desktop UI mode from the host app.

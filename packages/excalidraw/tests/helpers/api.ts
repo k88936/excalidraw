@@ -7,6 +7,7 @@ import { pointFrom, type LocalPoint, type Radians } from "@excalidraw/math";
 import { DEFAULT_VERTICAL_ALIGN, ROUNDNESS, assertNever } from "@excalidraw/common";
 
 import {
+  newAnimationElement,
   newArrowElement,
   newElement,
   newEmbeddableElement,
@@ -32,6 +33,7 @@ import type {
   ExcalidrawLinearElement,
   ExcalidrawFreeDrawElement,
   ExcalidrawImageElement,
+  ExcalidrawAnimationElement,
   FileId,
   ExcalidrawFrameElement,
   ExcalidrawElementType,
@@ -202,9 +204,9 @@ export class API {
       : never;
     points?: T extends "arrow" | "line" | "freedraw" ? readonly LocalPoint[] : never;
     locked?: boolean;
-    fileId?: T extends "image" ? string : never;
+    fileId?: T extends "image" | "animation" ? string : never;
     scale?: T extends "image" ? ExcalidrawImageElement["scale"] : never;
-    status?: T extends "image" ? ExcalidrawImageElement["status"] : never;
+    status?: T extends "image" | "animation" ? ExcalidrawImageElement["status"] : never;
     startBinding?: T extends "arrow"
       ? ExcalidrawArrowElement["startBinding"] | ExcalidrawElbowArrowElement["startBinding"]
       : never;
@@ -227,6 +229,8 @@ export class API {
     ? ExcalidrawTextElement
     : T extends "image"
     ? ExcalidrawImageElement
+    : T extends "animation"
+    ? ExcalidrawAnimationElement
     : T extends "frame"
     ? ExcalidrawFrameElement
     : T extends "magicframe"
@@ -355,6 +359,16 @@ export class API {
           fileId: (rest.fileId as string as FileId) ?? null,
           status: rest.status || "saved",
           scale: rest.scale || [1, 1],
+        });
+        break;
+      case "animation":
+        element = newAnimationElement({
+          ...base,
+          width,
+          height,
+          type,
+          fileId: (rest.fileId as string as FileId) ?? null,
+          status: rest.status || "saved",
         });
         break;
       case "frame":

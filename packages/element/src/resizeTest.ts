@@ -22,7 +22,7 @@ import {
   getOmitSidesForEditorInterface,
   canResizeFromSides,
 } from "./transformHandles";
-import { isImageElement, isLinearElement } from "./typeChecks";
+import { isAnimationElement, isImageElement, isLinearElement } from "./typeChecks";
 
 import type {
   TransformHandleType,
@@ -97,7 +97,7 @@ export const resizeTest = <Point extends GlobalPoint | LocalPoint>(
 
     // do not resize from the sides for linear elements with only two points
     if (!(isLinearElement(element) && element.points.length <= 2)) {
-      const SPACING = isImageElement(element)
+      const SPACING = isImageElement(element) || isAnimationElement(element)
         ? 0
         : SIDE_RESIZING_THRESHOLD / zoom.value;
       const ZOOMED_SIDE_RESIZING_THRESHOLD =

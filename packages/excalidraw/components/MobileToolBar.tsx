@@ -159,6 +159,7 @@ export const MobileToolBar = ({
     "text",
     "frame",
     "embeddable",
+    "animation",
     "laser",
     "magicframe",
   ].filter((tool) => {
@@ -183,6 +184,8 @@ export const MobileToolBar = ({
       ? frameToolIcon
       : activeTool.type === "embeddable"
       ? EmbedIcon
+      : activeTool.type === "animation"
+      ? ImageIcon
       : activeTool.type === "laser"
       ? laserPointerToolIcon
       : activeTool.type === "magicframe"
@@ -445,6 +448,14 @@ export const MobileToolBar = ({
             selected={embeddableToolSelected}
           >
             {t("toolBar.embeddable")}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => app.setActiveTool({ type: "animation" })}
+            icon={ImageIcon}
+            data-testid="toolbar-animation"
+            selected={activeTool.type === "animation"}
+          >
+            {t("toolBar.animation")}
           </DropdownMenu.Item>
           <DropdownMenu.Item
             onSelect={() => app.setActiveTool({ type: "laser" })}

@@ -49,6 +49,7 @@ import {
 } from "./textMeasurements";
 import { wrapText } from "./textWrapping";
 import {
+  isAnimationElement,
   isArrowElement,
   isBindingElement,
   isBoundToContainer,
@@ -1418,6 +1419,13 @@ export const resizeMultipleElements = (
       }
 
       if (isImageElement(orig)) {
+        update.scale = [
+          orig.scale[0] * flipFactorX,
+          orig.scale[1] * flipFactorY,
+        ];
+      }
+
+      if (isAnimationElement(orig)) {
         update.scale = [
           orig.scale[0] * flipFactorX,
           orig.scale[1] * flipFactorY,

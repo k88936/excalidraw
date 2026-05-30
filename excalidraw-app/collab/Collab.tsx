@@ -21,7 +21,12 @@ import {
 import { decryptData } from "@excalidraw/excalidraw/data/encryption";
 import { getVisibleSceneBounds } from "@excalidraw/element";
 import { newElementWith } from "@excalidraw/element";
-import { isImageElement, isInitializedImageElement } from "@excalidraw/element";
+import {
+  isAnimationElement,
+  isInitializedAnimationElement,
+  isInitializedImageElement,
+  isImageElement,
+} from "@excalidraw/element";
 import { AbortError } from "@excalidraw/excalidraw/errors";
 import { t } from "@excalidraw/excalidraw/i18n";
 import { withBatchedUpdates } from "@excalidraw/excalidraw/reactUtils";
@@ -39,6 +44,7 @@ import type { ImportedDataState } from "@excalidraw/excalidraw/data/types";
 import type {
   ExcalidrawElement,
   FileId,
+  InitializedExcalidrawAnimationElement,
   InitializedExcalidrawImageElement,
   OrderedExcalidrawElement,
 } from "@excalidraw/element/types";
@@ -392,6 +398,9 @@ class Collab extends PureComponent<CollabProps, CollabState> {
           if (isImageElement(element) && element.status === "saved") {
             return newElementWith(element, { status: "pending" });
           }
+          if (isAnimationElement(element) && element.status === "saved") {
+            return newElementWith(element, { status: "pending" });
+          }
           return element;
         });
 
@@ -429,18 +438,25 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     forceFetchFiles?: boolean;
   }) => {
     const unfetchedImages = opts.elements
-      .filter((element) => {
-        return (
-          isInitializedImageElement(element) &&
-          !this.fileManager.isFileTracked(element.fileId) &&
-          !element.isDeleted &&
-          (opts.forceFetchFiles
-            ? element.status !== "pending" ||
-              Date.now() - element.updated > 10000
-            : element.status === "saved")
-        );
-      })
-      .map((element) => (element as InitializedExcalidrawImageElement).fileId);
+      .filter(
+        (
+          element,
+        ): element is
+          | InitializedExcalidrawImageElement
+          | InitializedExcalidrawAnimationElement => {
+          return (
+            (isInitializedImageElement(element) ||
+              isInitializedAnimationElement(element)) &&
+            !this.fileManager.isFileTracked(element.fileId) &&
+            !element.isDeleted &&
+            (opts.forceFetchFiles
+              ? element.status !== "pending" ||
+                Date.now() - element.updated > 10000
+              : element.status === "saved")
+          );
+        },
+      )
+      .map((element) => element.fileId);
 
     return await this.fileManager.getFiles(unfetchedImages);
   };
@@ -541,6 +557,9 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     } else {
       const elements = this.excalidrawAPI.getSceneElements().map((element) => {
         if (isImageElement(element) && element.status === "saved") {
+          return newElementWith(element, { status: "pending" });
+        }
+        if (isAnimationElement(element) && element.status === "saved") {
           return newElementWith(element, { status: "pending" });
         }
         return element;

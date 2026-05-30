@@ -1,13 +1,17 @@
 import { CaptureUpdateAction } from "@excalidraw/excalidraw";
 import { compressData } from "@excalidraw/excalidraw/data/encode";
 import { newElementWith } from "@excalidraw/element";
-import { isInitializedImageElement } from "@excalidraw/element";
+import {
+  isInitializedAnimationElement,
+  isInitializedImageElement,
+} from "@excalidraw/element";
 import { t } from "@excalidraw/excalidraw/i18n";
 
 import type {
   ExcalidrawElement,
   ExcalidrawImageElement,
   FileId,
+  InitializedExcalidrawAnimationElement,
   InitializedExcalidrawImageElement,
 } from "@excalidraw/element/types";
 import type {
@@ -99,16 +103,31 @@ export class FileManager {
     const addedFiles: Map<FileId, BinaryFileData> = new Map();
 
     for (const element of elements) {
-      const fileData =
-        isInitializedImageElement(element) && files[element.fileId];
+      if (isInitializedImageElement(element)) {
+        const fileId = element.fileId;
+        const fileData = files[fileId];
+        if (
+          fileData &&
+          // NOTE if errored during save, won't retry due to this check
+          !this.isFileSavedOrBeingSaved(fileData)
+        ) {
+          addedFiles.set(fileId, fileData);
+          this.savingFiles.set(fileId, this.getFileVersion(fileData));
+        }
+        continue;
+      }
 
-      if (
-        fileData &&
-        // NOTE if errored during save, won't retry due to this check
-        !this.isFileSavedOrBeingSaved(fileData)
-      ) {
-        addedFiles.set(element.fileId, files[element.fileId]);
-        this.savingFiles.set(element.fileId, this.getFileVersion(fileData));
+      if (isInitializedAnimationElement(element)) {
+        const fileId = element.fileId;
+        const fileData = files[fileId];
+        if (
+          fileData &&
+          // NOTE if errored during save, won't retry due to this check
+          !this.isFileSavedOrBeingSaved(fileData)
+        ) {
+          addedFiles.set(fileId, fileData);
+          this.savingFiles.set(fileId, this.getFileVersion(fileData));
+        }
       }
     }
 
@@ -189,7 +208,8 @@ export class FileManager {
   shouldPreventUnload = (elements: readonly ExcalidrawElement[]) => {
     return elements.some((element) => {
       return (
-        isInitializedImageElement(element) &&
+        (isInitializedImageElement(element) ||
+          isInitializedAnimationElement(element)) &&
         !element.isDeleted &&
         this.savingFiles.has(element.fileId)
       );
@@ -201,9 +221,12 @@ export class FileManager {
    */
   shouldUpdateImageElementStatus = (
     element: ExcalidrawElement,
-  ): element is InitializedExcalidrawImageElement => {
+  ): element is
+    | InitializedExcalidrawImageElement
+    | InitializedExcalidrawAnimationElement => {
     return (
-      isInitializedImageElement(element) &&
+      (isInitializedImageElement(element) ||
+        isInitializedAnimationElement(element)) &&
       this.savedFiles.has(element.fileId) &&
       element.status === "pending"
     );
@@ -282,7 +305,8 @@ export const updateStaleImageStatuses = (params: {
       .getSceneElementsIncludingDeleted()
       .map((element) => {
         if (
-          isInitializedImageElement(element) &&
+          (isInitializedImageElement(element) ||
+            isInitializedAnimationElement(element)) &&
           params.erroredFiles.has(element.fileId)
         ) {
           return newElementWith(element, {

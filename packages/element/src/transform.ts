@@ -20,6 +20,7 @@ import type { MarkOptional } from "@excalidraw/common/utility-types";
 
 import { bindBindingElement } from "./binding";
 import {
+  newAnimationElement,
   newArrowElement,
   newElement,
   newFrameElement,
@@ -43,21 +44,24 @@ import { getCommonBounds } from "./bounds";
 import { Scene } from "./Scene";
 
 import type {
+  ExcalidrawAnimationElement,
   ExcalidrawArrowElement,
   ExcalidrawBindableElement,
   ExcalidrawElement,
+  ExcalidrawEmbeddableElement,
   ExcalidrawFrameElement,
   ExcalidrawFreeDrawElement,
   ExcalidrawGenericElement,
+  ExcalidrawIframeElement,
   ExcalidrawIframeLikeElement,
   ExcalidrawImageElement,
   ExcalidrawLinearElement,
   ExcalidrawMagicFrameElement,
+  NonDeletedSceneElementsMap,
   ExcalidrawSelectionElement,
   ExcalidrawTextElement,
   FileId,
   FontFamilyValues,
-  NonDeletedSceneElementsMap,
   TextAlign,
   VerticalAlign,
 } from "./types";
@@ -197,6 +201,12 @@ export type ExcalidrawElementSkeleton =
       y: number;
       fileId: FileId;
     } & Partial<ExcalidrawImageElement>)
+  | ({
+      type: "animation";
+      x: number;
+      y: number;
+      fileId: FileId;
+    } & Partial<ExcalidrawAnimationElement>)
   | ({
       type: "frame";
       children: readonly ExcalidrawElement["id"][];
@@ -513,7 +523,9 @@ export const convertToExcalidrawElements = (
   if (!elementsSkeleton) {
     return [];
   }
-  const elements = cloneJSON(elementsSkeleton);
+  const elements = cloneJSON(
+    elementsSkeleton,
+  ) as ExcalidrawElementSkeleton[];
   const elementStore = new ElementStore();
   const elementsWithIds = new Map<string, ExcalidrawElementSkeleton>();
   const oldToNewElementIdMap = new Map<string, string>();
@@ -595,6 +607,15 @@ export const convertToExcalidrawElements = (
           fontSize,
           ...element,
         });
+        break;
+      }
+      case "animation": {
+        excalidrawElement = newAnimationElement({
+          width: element?.width || DEFAULT_DIMENSION,
+          height: element?.height || DEFAULT_DIMENSION,
+          ...element,
+        });
+
         break;
       }
       case "image": {

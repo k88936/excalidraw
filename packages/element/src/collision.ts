@@ -44,6 +44,7 @@ import {
   isFreeDrawElement,
   isIframeLikeElement,
   isImageElement,
+  isAnimationElement,
   isLinearElement,
   isTextElement,
 } from "./typeChecks";
@@ -98,7 +99,7 @@ export const shouldTestInside = (element: ExcalidrawElement) => {
     return isDraggableFromInside && isPathALoop(element.points);
   }
 
-  return isDraggableFromInside || isImageElement(element);
+  return isDraggableFromInside || isImageElement(element) || isAnimationElement(element);
 };
 
 export type HitTestArgs = {
@@ -450,6 +451,7 @@ export const intersectElementWithLineSegment = (
   switch (element.type) {
     case "rectangle":
     case "image":
+    case "animation":
     case "text":
     case "iframe":
     case "embeddable":

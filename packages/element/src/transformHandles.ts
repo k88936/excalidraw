@@ -15,6 +15,7 @@ import type { Bounds } from "@excalidraw/common";
 
 import { getElementAbsoluteCoords } from "./bounds";
 import {
+  isAnimationElement,
   isElbowArrow,
   isFrameLikeElement,
   isImageElement,
@@ -311,7 +312,7 @@ export const getTransformHandles = (
   }
   const margin = isLinearElement(element)
     ? DEFAULT_TRANSFORM_HANDLE_SPACING + 8
-    : isImageElement(element)
+    : isImageElement(element) || isAnimationElement(element)
     ? 0
     : DEFAULT_TRANSFORM_HANDLE_SPACING;
   return getTransformHandlesFromCoords(
@@ -321,7 +322,7 @@ export const getTransformHandles = (
     pointerType,
     omitSides,
     margin,
-    isImageElement(element) ? 0 : undefined,
+    isImageElement(element) || isAnimationElement(element) ? 0 : undefined,
   );
 };
 

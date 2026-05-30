@@ -102,6 +102,15 @@ export type ExcalidrawEmbeddableElement = _ExcalidrawElementBase &
     type: "embeddable";
   }>;
 
+export type ExcalidrawAnimationElement = _ExcalidrawElementBase &
+  Readonly<{
+    type: "animation";
+    fileId: FileId | null;
+    status: "pending" | "saved" | "error";
+    /** X and Y scale factors <-1, 1>, used for axis flipping */
+    scale: [number, number];
+  }>;
+
 export type MagicGenerationData =
   | {
       status: "pending";
@@ -160,6 +169,11 @@ export type InitializedExcalidrawImageElement = MarkNonNullable<
   "fileId"
 >;
 
+export type InitializedExcalidrawAnimationElement = MarkNonNullable<
+  ExcalidrawAnimationElement,
+  "fileId"
+>;
+
 export type ExcalidrawFrameElement = _ExcalidrawElementBase & {
   type: "frame";
   name: string | null;
@@ -196,6 +210,7 @@ export type ExcalidrawRectanguloidElement =
   | ExcalidrawIframeLikeElement
   | ExcalidrawFrameLikeElement
   | ExcalidrawEmbeddableElement
+  | ExcalidrawAnimationElement
   | ExcalidrawSelectionElement;
 
 /**
@@ -210,6 +225,7 @@ export type ExcalidrawElement =
   | ExcalidrawArrowElement
   | ExcalidrawFreeDrawElement
   | ExcalidrawImageElement
+  | ExcalidrawAnimationElement
   | ExcalidrawFrameElement
   | ExcalidrawMagicFrameElement
   | ExcalidrawIframeElement
@@ -262,6 +278,7 @@ export type ExcalidrawBindableElement =
   | ExcalidrawEllipseElement
   | ExcalidrawTextElement
   | ExcalidrawImageElement
+  | ExcalidrawAnimationElement
   | ExcalidrawIframeElement
   | ExcalidrawEmbeddableElement
   | ExcalidrawFrameElement

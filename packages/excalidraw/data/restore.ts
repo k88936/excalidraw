@@ -171,6 +171,7 @@ export const AllowedExcalidrawActiveTools: Record<
   ellipse: true,
   line: true,
   image: true,
+  animation: true,
   arrow: true,
   freedraw: true,
   eraser: false,
@@ -486,6 +487,12 @@ export const restoreElement = (
         pressures,
       });
     }
+    case "animation":
+      return restoreElementWithProperties(element, {
+        status: element.status || "pending",
+        fileId: element.fileId,
+        scale: element.scale || [1, 1],
+      });
     case "image":
       return restoreElementWithProperties(element, {
         status: element.status || "pending",

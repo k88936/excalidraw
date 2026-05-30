@@ -177,6 +177,82 @@ const renderElementToSvg = (
       addToRoot(g || node, element);
       break;
     }
+    case "animation": {
+      const shape = ShapeCache.generateElementShape(element, renderConfig);
+      const node = roughSVGDrawWithPrecision(
+        rsvg,
+        shape,
+        MAX_DECIMALS_FOR_SVG_EXPORT,
+      );
+      const opacity = element.opacity / 100;
+      if (opacity !== 1) {
+        node.setAttribute("stroke-opacity", `${opacity}`);
+        node.setAttribute("fill-opacity", `${opacity}`);
+      }
+      node.setAttribute("stroke-linecap", "round");
+      node.setAttribute(
+        "transform",
+        `translate(${offsetX || 0} ${
+          offsetY || 0
+        }) rotate(${degree} ${cx} ${cy})`,
+      );
+      addToRoot(node, element);
+
+      if (element.fileId && files[element.fileId]?.dataURL) {
+        const animNode = roughSVGDrawWithPrecision(
+          rsvg,
+          shape,
+          MAX_DECIMALS_FOR_SVG_EXPORT,
+        );
+        while (animNode.firstChild) {
+          animNode.removeChild(animNode.firstChild);
+        }
+        const radius = getCornerRadius(
+          Math.min(element.width, element.height),
+          element,
+        );
+        const foreignObject = svgRoot.ownerDocument.createElementNS(
+          SVG_NS,
+          "foreignObject",
+        );
+        foreignObject.style.width = `${element.width}px`;
+        foreignObject.style.height = `${element.height}px`;
+        foreignObject.style.border = "none";
+        const div = foreignObject.ownerDocument.createElementNS(SVG_NS, "div");
+        div.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+        div.style.width = "100%";
+        div.style.height = "100%";
+        const img = div.ownerDocument.createElement("img");
+        img.src = files[element.fileId].dataURL;
+        img.style.width = "100%";
+        img.style.height = "100%";
+        img.style.border = "none";
+        img.style.borderRadius = `${radius}px`;
+        img.style.display = "block";
+        div.appendChild(img);
+        foreignObject.appendChild(div);
+        animNode.appendChild(foreignObject);
+        if (element.scale[0] !== 1 || element.scale[1] !== 1) {
+          animNode.setAttribute(
+            "transform",
+            `translate(${offsetX || 0} ${
+              offsetY || 0
+            }) rotate(${degree} ${cx} ${cy}) translate(${cx} ${cy}) scale(${
+              element.scale[0]
+            } ${element.scale[1]}) translate(${-cx} ${-cy})`,
+          );
+        } else {
+          animNode.setAttribute(
+            "transform",
+            `translate(${offsetX || 0} ${
+              offsetY || 0
+            }) rotate(${degree} ${cx} ${cy})`,
+          );
+        }
+        addToRoot(animNode, element);
+      }
+      break;
+    }
     case "iframe":
     case "embeddable": {
       // render placeholder rectangle

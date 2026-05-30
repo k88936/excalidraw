@@ -42,6 +42,7 @@ import type {
   ExcalidrawTextContainer,
   ExcalidrawFrameElement,
   ExcalidrawEmbeddableElement,
+  ExcalidrawAnimationElement,
   ExcalidrawMagicFrameElement,
   ExcalidrawIframeElement,
   ElementsMap,
@@ -168,6 +169,23 @@ export const newEmbeddableElement = (
   } & ElementConstructorOpts,
 ): NonDeleted<ExcalidrawEmbeddableElement> => {
   return _newElementBase<ExcalidrawEmbeddableElement>("embeddable", opts);
+};
+
+export const newAnimationElement = (
+  opts: {
+    type: ExcalidrawAnimationElement["type"];
+    status?: ExcalidrawAnimationElement["status"];
+    fileId?: ExcalidrawAnimationElement["fileId"];
+    scale?: ExcalidrawAnimationElement["scale"];
+  } & ElementConstructorOpts,
+): NonDeleted<ExcalidrawAnimationElement> => {
+  return {
+    ..._newElementBase<ExcalidrawAnimationElement>("animation", opts),
+    strokeColor: "transparent",
+    status: opts.status ?? "pending",
+    fileId: opts.fileId ?? null,
+    scale: opts.scale ?? [1, 1],
+  };
 };
 
 export const newIframeElement = (

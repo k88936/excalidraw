@@ -35,6 +35,7 @@ export const distanceToElement = (
     case "selection":
     case "rectangle":
     case "image":
+    case "animation":
     case "text":
     case "iframe":
     case "embeddable":

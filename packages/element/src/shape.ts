@@ -774,7 +774,8 @@ const _generateElementShape = (
   switch (element.type) {
     case "rectangle":
     case "iframe":
-    case "embeddable": {
+    case "embeddable":
+    case "animation": {
       let shape: ElementShapes[typeof element.type];
       // this is for rendering the stroke/bg of the embeddable, especially
       // when the src url is not set
@@ -1084,6 +1085,7 @@ export const getElementShape = <Point extends GlobalPoint | LocalPoint>(
     case "magicframe":
     case "embeddable":
     case "image":
+    case "animation":
     case "iframe":
     case "text":
     case "selection":

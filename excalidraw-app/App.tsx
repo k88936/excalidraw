@@ -55,7 +55,10 @@ import {
   restoreElements,
 } from "@excalidraw/excalidraw/data/restore";
 import { newElementWith } from "@excalidraw/element";
-import { isInitializedImageElement } from "@excalidraw/element";
+import {
+  isInitializedAnimationElement,
+  isInitializedImageElement,
+} from "@excalidraw/element";
 import clsx from "clsx";
 import {
   parseLibraryTokensFromUrl,
@@ -463,7 +466,10 @@ const ExcalidrawWrapper = () => {
       } else {
         const fileIds =
           data.scene.elements?.reduce((acc, element) => {
-            if (isInitializedImageElement(element)) {
+            if (
+              isInitializedImageElement(element) ||
+              isInitializedAnimationElement(element)
+            ) {
               return acc.concat(element.fileId);
             }
             return acc;
@@ -590,7 +596,8 @@ const ExcalidrawWrapper = () => {
           const fileIds =
             elements?.reduce((acc, element) => {
               if (
-                isInitializedImageElement(element) &&
+                (isInitializedImageElement(element) ||
+                  isInitializedAnimationElement(element)) &&
                 // only load and update images that aren't already loaded
                 !currFiles[element.fileId]
               ) {
